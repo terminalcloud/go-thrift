@@ -1,3 +1,4 @@
+// otherservice's handler implementation is trivial, and so can stay as it is
 package otherservice
 
 import (

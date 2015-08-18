@@ -7,10 +7,33 @@ import (
 
 type Handler struct {
 	count int16
+
+	ichan chan<- interface{}
+	ochan <-chan *int16
 }
 
 func NewHandler() *Handler {
-	h := Handler{0}
+	ichan := make(chan interface{})
+	ochan := make(chan *int16)
+
+	h := Handler{
+		count: 0,
+		ichan: ichan,
+		ochan: ochan,
+	}
+
+	// Processing loop to avoid race conditions from concurrent service function calls
+	go func() {
+		for {
+			select {
+			// Larger implementations should be moved to their own files
+			case <-ichan:
+				h.count++
+				ochan <- &h.count
+			}
+		}
+	}()
+
 	return &h
 }
 
@@ -21,9 +44,9 @@ func (h *Handler) Ping() error {
 
 func (h *Handler) Count() (count int16, err error) {
 	log.Println("count")
-	h.count++
-	count = h.count
-	return
+	// Count relies on synchronous data access, so it is delegated to a chan
+	h.ichan <- nil
+	return *<-h.ochan, nil
 }
 
 func (h *Handler) Echo(str string) (string, error) {
