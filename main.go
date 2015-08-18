@@ -5,24 +5,48 @@ package main
 import (
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/terminalcloud/go-thrift/example"
+	"github.com/terminalcloud/go-thrift/example/otherservice"
 	"github.com/terminalcloud/go-thrift/example/service"
+	"github.com/terminalcloud/go-thrift/server"
 	"log"
 )
 
 func main() {
-	// Instantiate the thrift server components
-	protocolFactory := thrift.NewTBinaryProtocolFactoryDefault()
-	transportFactory := thrift.NewTTransportFactory()
-	transport, err := thrift.NewTServerSocket("localhost:9090")
+	var processor thrift.TProcessor
+
+	// Start Service server
+	processor = example.NewServiceProcessor(service.NewHandler())
+	serviceServer, err := server.New("localhost:9090", &processor)
 	if err != nil {
-		log.Fatalf("Error: ", err)
+		log.Fatal(err)
 	}
+	log.Printf("Starting %s server on %s", "Service", serviceServer.Addr)
+	serviceServer.Start()
 
-	// Instantiate the Dnat service handler
-	handler := service.NewHandler()
-	processor := example.NewServiceProcessor(handler)
+	// Start OtherService server
+	processor = example.NewOtherServiceProcessor(otherservice.NewHandler())
+	otherServer, err := server.New("localhost:9091", &processor)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Starting %s server on %s", "OtherService", otherServer.Addr)
+	otherServer.Start()
 
-	server := thrift.NewTSimpleServer4(processor, transport, transportFactory, protocolFactory)
-	log.Println("Serving on localhost:9090")
-	server.Serve()
+	for {
+		var service string
+		var server *server.Server
+		var err error
+
+		select {
+		case err = <-serviceServer.Wait:
+			service = "Service"
+			server = serviceServer
+		case err = <-otherServer.Wait:
+			service = "Other"
+			server = otherServer
+		}
+
+		log.Printf("Restarting %s server on %s: %s", service, server.Addr, err)
+		server.Start()
+	}
 }

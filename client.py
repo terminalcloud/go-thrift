@@ -4,6 +4,7 @@ import sys, glob
 sys.path.append('gen-py')
 
 from example import Service
+from example import OtherService
 from example.ttypes import *
 
 from thrift import Thrift
@@ -13,35 +14,44 @@ from thrift.protocol import TBinaryProtocol
 
 try:
     # Make socket
-    transport = TSocket.TSocket('localhost', 9090)
+    serviceTransport = TSocket.TSocket('localhost', 9090)
+    otherTransport = TSocket.TSocket('localhost', 9091)
 
     # Buffering is critical. Raw sockets are very slow
-    transport = TTransport.TBufferedTransport(transport)
+    serviceTransport = TTransport.TBufferedTransport(serviceTransport)
+    otherTransport = TTransport.TBufferedTransport(otherTransport)
 
     # Wrap in a protocol
-    protocol = TBinaryProtocol.TBinaryProtocol(transport)
+    serviceProtocol = TBinaryProtocol.TBinaryProtocol(serviceTransport)
+    otherProtocol = TBinaryProtocol.TBinaryProtocol(otherTransport)
 
     # Create a client to use the protocol encoder
-    client = Service.Client(protocol)
+    serviceClient = Service.Client(serviceProtocol)
+    otherClient = OtherService.Client(otherProtocol)
 
     # Connect
-    transport.open()
+    serviceTransport.open()
+    otherTransport.open()
 
     # Test out operations
     f = flop()
     f.a = 1
     f.b = 2
 
-    client.ping()
-    print client.count()
-    print client.count()
-    print client.count()
-    print client.echo("Hello, world!")
-    print client.flip(f)
-    client.fail()
+    serviceClient.ping()
+    print serviceClient.count()
+    print serviceClient.count()
+    print serviceClient.count()
+    print serviceClient.echo("Hello, world!")
+    print serviceClient.flip(f)
+
+    otherClient.noop()
+
+    serviceClient.fail()
 
     # Close
-    transport.close()
+    serviceTransport.close()
+    otherTransport.close()
 
 except Thrift.TException, tx:
     print 'Failed: %s' % (tx.message)

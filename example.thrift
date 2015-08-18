@@ -23,3 +23,8 @@ service Service extends Ping {
 	# Throws an ExampleException
 	void fail() throws (1: ExampleException e)
 }
+
+service OtherService {
+	# Simply returns
+	void noop()
+}
