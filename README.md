@@ -58,4 +58,4 @@ In real scenarios, files with large implementations should also be split to main
 
 ---
 
-For a preconfigured environment to run through this tutorial, visit terminal.com.
+For a preconfigured environment to run through this tutorial, visit https://www.terminal.com/tiny/LGLivnbJox
